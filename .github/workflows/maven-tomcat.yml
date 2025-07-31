@@ -19,18 +19,25 @@ jobs:
         java-version: '11'
         distribution: 'temurin'
 
-    - name: Clean Project
-      run: mvn clean
+    - name: Build Project (Maven Clean + Package)
+      run: mvn clean package
 
-    - name: Package WAR
-      run: mvn package
+    - name: Verify WAR file exists
+      run: ls -l target/*.war
 
-    - name: Deploy to Tomcat
+    - name: Deploy WAR to Tomcat
       env:
         TOMCAT_URL: http://13.56.195.16:8081
         TOMCAT_USER: ${{ secrets.TOMCAT_USER }}
         TOMCAT_PASS: ${{ secrets.TOMCAT_PASS }}
       run: |
         WAR_FILE=$(find target -name "*.war" | head -n 1)
-        echo "Deploying $WAR_FILE to $TOMCAT_URL"
-        curl -u "$TOMCAT_USER:$TOMCAT_PASS" --upload-file "$WAR_FILE" "$TOMCAT_URL/manager/text/deploy?path=/test&update=true"
+        if [ -z "$WAR_FILE" ]; then
+          echo "❌ WAR file not found! Deployment aborted."
+          exit 1
+        fi
+        echo "✅ Found WAR file: $WAR_FILE"
+        echo "🚀 Deploying to $TOMCAT_URL"
+        curl -u "$TOMCAT_USER:$TOMCAT_PASS" \
+             --upload-file "$WAR_FILE" \
+             "$TOMCAT_URL/manager/text/deploy?path=/test&update=true"
