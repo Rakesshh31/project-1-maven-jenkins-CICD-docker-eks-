@@ -3,37 +3,49 @@ name: Maven Build and Deploy to Tomcat
 on:
   push:
     branches:
-      - main  # Trigger the workflow when changes are pushed to the main branch
+      - main
 
 jobs:
   build-and-deploy:
-    runs-on: ubuntu-latest  # Use the latest Ubuntu environment for the job
+    runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v3  # Check out the code from the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Set up JDK 11
-      uses: actions/setup-java@v3  # Set up Java Development Kit (JDK) version 11
-      with:
-        java-version: '11'
-        distribution: 'temurin'  # AdoptOpenJDK (Temurin distribution)
+      - name: Set up JDK 11
+        uses: actions/setup-java@v3
+        with:
+          java-version: '11'
+          distribution: 'temurin'
 
-    - name: Clean Project
-      run: mvn clean  # Clean the previous build artifacts using Maven
+      - name: Build with Maven
+        run: |
+          mvn clean
+          mvn test
+          mvn install
 
-    - name: Package WAR
-      run: mvn package  # Package the project into a WAR file using Maven
+      - name: Deploy WAR to Tomcat
+        env:
+          TOMCAT_USER: admin
+          TOMCAT_PASS: admin
+          TOMCAT_HOST: 52.53.126.73  # Your Tomcat IP
+          TOMCAT_PORT: 8080            # Correct port
+          WAR_NAME: webapp             # WAR file name (without the .war extension)
+        run: |
+          # Find the WAR file
+          WAR_PATH=$(find webapp/target -name "*.war" | head -n 1)
+          
+          # Check if the WAR file exists
+          if [[ ! -f "$WAR_PATH" ]]; then
+            echo "WAR file not found at expected location: $WAR_PATH"
+            exit 1
+          fi
 
-    - name: Deploy to Tomcat
-      env:
-        TOMCAT_URL: http://52.53.126.73:8080  # Set the Tomcat server URL
-        TOMCAT_USER: ${{ secrets.TOMCAT_USER }}  # Get the Tomcat user from GitHub secrets
-        TOMCAT_PASS: ${{ secrets.TOMCAT_PASS }}  # Get the Tomcat password from GitHub secrets
-      run: |
-        # Find the WAR file generated in the target directory
-        WAR_FILE=$(find target -name "*.war" | head -n 1)
-        echo "Deploying $WAR_FILE to $TOMCAT_URL"
-        
-        # Upload the WAR file to Tomcat using the Tomcat Manager API
-        curl -u "$TOMCAT_USER:$TOMCAT_PASS" --upload-file "$WAR_FILE" "$TOMCAT_URL/manager/text/deploy?path=/test&update=true"
+          # Output the WAR file path for debugging
+          echo "Deploying WAR: $WAR_PATH"
+
+          # Deploy WAR file to Tomcat
+          curl -v --upload-file "$WAR_PATH" \
+            --user "$TOMCAT_USER:$TOMCAT_PASS" \
+            "http://$TOMCAT_HOST:$TOMCAT_PORT/manager/text/deploy?path=/$WAR_NAME&update=true"
