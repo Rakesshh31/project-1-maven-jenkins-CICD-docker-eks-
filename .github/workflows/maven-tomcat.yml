@@ -27,7 +27,7 @@ jobs:
 
     - name: Deploy to Tomcat
       env:
-        TOMCAT_URL: http://52.53.184.118:8080  # Set the Tomcat server URL
+        TOMCAT_URL: http://52.53.126.73:8080  # Set the Tomcat server URL
         TOMCAT_USER: ${{ secrets.TOMCAT_USER }}  # Get the Tomcat user from GitHub secrets
         TOMCAT_PASS: ${{ secrets.TOMCAT_PASS }}  # Get the Tomcat password from GitHub secrets
       run: |
