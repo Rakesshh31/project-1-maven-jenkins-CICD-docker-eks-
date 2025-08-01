@@ -1,4 +1,4 @@
-name: Maven Build and Deploy to Tomcat
+name: Build and Deploy to EC2
 
 on:
   push:
@@ -6,31 +6,27 @@ on:
       - main
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
+    - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Set up JDK 11
+    - name: Setup Java
       uses: actions/setup-java@v3
       with:
-        java-version: '11'
-        distribution: 'temurin'
+        java-version: '17'
 
-    - name: Clean Project
-      run: mvn clean
+    - name: Build WAR
+      run: mvn clean package
 
-    - name: Package WAR
-      run: mvn package
-
-    - name: Deploy to Tomcat
-      env:
-        TOMCAT_URL: http://44.201.149.154:8081
-        TOMCAT_USER: ${{ secrets.TOMCAT_USER }}
-        TOMCAT_PASS: ${{ secrets.TOMCAT_PASS }}
-      run: |
-        WAR_FILE=$(find target -name "*.war" | head -n 1)
-        echo "Deploying $WAR_FILE to $TOMCAT_URL"
-        curl -u "$TOMCAT_USER:$TOMCAT_PASS" --upload-file "$WAR_FILE" "$TOMCAT_URL/manager/text/deploy?path=/test&update=true"
+    - name: Deploy WAR to EC2
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.EC2_HOST }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.EC2_KEY }}
+        port: 22
+        source: "target/webapp.war"
+        target: "/home/ubuntu/tomcat/webapps/"
