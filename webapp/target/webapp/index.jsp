@@ -1,10 +1,6 @@
 <form action="action_page.php">
   <div class="container">
-<<<<<<< HEAD
-    <h1> finally made it all thanks to jitu annnaaa</h1>
-=======
     <h1> jitu anna github process okkkkkkkkkkkkk  manually</h1>
->>>>>>> 8766c4f (made upadte from ec2 server)
     <p>Please fill in this form to create an account.</p>
     <hr>
      
